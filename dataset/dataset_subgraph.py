@@ -213,11 +213,14 @@ class MoleculeDatasetWrapper(object):
         train_sampler = SubsetRandomSampler(train_idx)
         valid_sampler = SubsetRandomSampler(valid_idx)
 
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, sampler=train_sampler,
-                                  num_workers=self.num_workers, drop_last=True)
-
-        valid_loader = DataLoader(train_dataset, batch_size=self.batch_size, sampler=valid_sampler,
-                                  num_workers=self.num_workers, drop_last=True)
+        train_loader = DataLoader(
+            train_dataset, batch_size=self.batch_size, sampler=train_sampler,
+            num_workers=self.num_workers, drop_last=True
+        )
+        valid_loader = DataLoader(
+            train_dataset, batch_size=self.batch_size, sampler=valid_sampler,
+            num_workers=self.num_workers, drop_last=True
+        )
 
         return train_loader, valid_loader
 
