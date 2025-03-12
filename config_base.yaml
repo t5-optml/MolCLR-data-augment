@@ -20,7 +20,7 @@ model:
   drop_ratio: 0                         # dropout ratio
   pool: mean                            # readout pooling (i.e., mean/max/add)
 
-aug: node                               # molecule graph augmentation strategy (i.e., node/subgraph/mix)
+aug: no_aug                               # molecule graph augmentation strategy (i.e., node/subgraph/mix)
 dataset:
   remove_header: True                   # whether to remove the header of the csv file
   num_workers: 4                                    # dataloader number of workers
