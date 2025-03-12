@@ -30,6 +30,12 @@ Run the following command to build the Docker image (might take a while, grab yo
 docker build -t t5-optml/molclr-data-augment .
 ```
 
+Alternatively, if the dataset for the downstream task uses an older version of the `rdkit` library, run the following command to build the Docker image with an older version of `rdkit`
+
+```bash
+docker build -t t5-optml/molclr-data-augment -f Dockerfile.fix .
+```
+
 ### Running
 
 After that run the following command to run the imagee into a container. This will spin up a Jupyter Lab for you at port 8888 for you to access with your browser

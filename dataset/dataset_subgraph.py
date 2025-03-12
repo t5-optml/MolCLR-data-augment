@@ -108,6 +108,8 @@ class MoleculeDataset(Dataset):
         atoms = mol.GetAtoms()
         bonds = mol.GetBonds()
         # Sample 2 different centers to start for i and j
+        
+
         start_i, start_j = random.sample(list(range(N)), 2)
 
         # Construct the original molecular graph from edges (bonds)
@@ -213,11 +215,14 @@ class MoleculeDatasetWrapper(object):
         train_sampler = SubsetRandomSampler(train_idx)
         valid_sampler = SubsetRandomSampler(valid_idx)
 
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, sampler=train_sampler,
-                                  num_workers=self.num_workers, drop_last=True)
-
-        valid_loader = DataLoader(train_dataset, batch_size=self.batch_size, sampler=valid_sampler,
-                                  num_workers=self.num_workers, drop_last=True)
+        train_loader = DataLoader(
+            train_dataset, batch_size=self.batch_size, sampler=train_sampler,
+            num_workers=self.num_workers, drop_last=True
+        )
+        valid_loader = DataLoader(
+            train_dataset, batch_size=self.batch_size, sampler=valid_sampler,
+            num_workers=self.num_workers, drop_last=True
+        )
 
         return train_loader, valid_loader
 

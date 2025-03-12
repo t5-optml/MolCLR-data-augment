@@ -1,6 +1,5 @@
 import os
 import shutil
-import sys
 import yaml
 import numpy as np
 import pandas as pd
@@ -9,22 +8,12 @@ from datetime import datetime
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torch.utils.tensorboard import SummaryWriter
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.utils.tensorboard.writer import SummaryWriter
 from sklearn.metrics import roc_auc_score, mean_squared_error, mean_absolute_error
 
 from dataset.dataset_test import MolTestDatasetWrapper
 
 
-apex_support = False
-try:
-    sys.path.append('./apex')
-    from apex import amp
-
-    apex_support = True
-except:
-    print("Please install apex for mixed precision training from: https://github.com/NVIDIA/apex")
-    apex_support = False
 
 
 def _save_config_file(model_checkpoints_folder):
@@ -84,9 +73,9 @@ class FineTune(object):
 
         return device
 
-    def _step(self, model, data, n_iter):
+    def _step(self, model, data, _):
         # get the prediction
-        __, pred = model(data)  # [N,C]
+        _, pred = model(data)  # [N,C]
 
         if self.config['dataset']['task'] == 'classification':
             loss = self.criterion(pred, data.y.flatten())
@@ -104,7 +93,7 @@ class FineTune(object):
         self.normalizer = None
         if self.config["task_name"] in ['qm7', 'qm9']:
             labels = []
-            for d, __ in train_loader:
+            for d, _ in train_loader:
                 labels.append(d.y)
             labels = torch.cat(labels)
             self.normalizer = Normalizer(labels)
@@ -133,7 +122,7 @@ class FineTune(object):
             self.config['init_lr'], weight_decay=eval(self.config['weight_decay'])
         )
 
-        if apex_support and self.config['fp16_precision']:
+        if self.config['fp16_precision']:
             model, optimizer = amp.initialize(
                 model, optimizer, opt_level='O2', keep_batchnorm_fp32=True
             )
@@ -145,7 +134,6 @@ class FineTune(object):
 
         n_iter = 0
         valid_n_iter = 0
-        best_valid_loss = np.inf
         best_valid_rgr = np.inf
         best_valid_cls = 0
 
@@ -160,7 +148,7 @@ class FineTune(object):
                     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                     print(epoch_counter, bn, loss.item())
 
-                if apex_support and self.config['fp16_precision']:
+                if self.config['fp16_precision']:
                     with amp.scale_loss(loss, optimizer) as scaled_loss:
                         scaled_loss.backward()
                 else:
@@ -212,7 +200,7 @@ class FineTune(object):
             for bn, data in enumerate(valid_loader):
                 data = data.to(self.device)
 
-                __, pred = model(data)
+                _, pred = model(data)
                 loss = self._step(model, data, bn)
 
                 valid_loss += loss.item() * data.y.size(0)
@@ -243,7 +231,7 @@ class FineTune(object):
                 print('Validation loss:', valid_loss, 'MAE:', mae)
                 return valid_loss, mae
             else:
-                rmse = mean_squared_error(labels, predictions, squared=False)
+                rmse = mean_squared_error(labels, predictions)
                 print('Validation loss:', valid_loss, 'RMSE:', rmse)
                 return valid_loss, rmse
 
@@ -271,7 +259,7 @@ class FineTune(object):
             for bn, data in enumerate(test_loader):
                 data = data.to(self.device)
 
-                __, pred = model(data)
+                _, pred = model(data)
                 loss = self._step(model, data, bn)
 
                 test_loss += loss.item() * data.y.size(0)
@@ -301,7 +289,7 @@ class FineTune(object):
                 self.mae = mean_absolute_error(labels, predictions)
                 print('Test loss:', test_loss, 'Test MAE:', self.mae)
             else:
-                self.rmse = mean_squared_error(labels, predictions, squared=False)
+                self.rmse = mean_squared_error(labels, predictions)
                 print('Test loss:', test_loss, 'Test RMSE:', self.rmse)
 
         elif self.config['dataset']['task'] == 'classification': 
