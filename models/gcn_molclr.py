@@ -17,7 +17,7 @@ from torch_geometric.nn import global_add_pool, global_mean_pool, global_max_poo
 from torch_geometric.utils.num_nodes import maybe_num_nodes
 
 
-num_atom_type = 119 # including the extra mask tokens
+num_atom_type = 119 # 193 # including the extra mask tokens
 num_chirality_tag = 3
 
 num_bond_type = 5 # including aromatic and self-loop edge

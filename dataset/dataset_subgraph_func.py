@@ -9,7 +9,6 @@ from copy import deepcopy
 
 import torch
 import torch.nn.functional as F
-# from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 import torchvision.transforms as transforms
 
@@ -21,7 +20,6 @@ from rdkit import Chem
 from rdkit.Chem.rdchem import HybridizationType
 from rdkit.Chem.rdchem import BondType as BT
 from rdkit.Chem import AllChem
-
 
 ATOM_LIST = list(range(1,119))
 CHIRALITY_LIST = [
@@ -42,7 +40,6 @@ BONDDIR_LIST = [
     Chem.rdchem.BondDir.ENDDOWNRIGHT
 ]
 
-
 def read_smiles(data_path, remove_header=False):
     smiles_data = []
     with open(data_path) as csv_file:
@@ -52,30 +49,22 @@ def read_smiles(data_path, remove_header=False):
         for i, row in enumerate(csv_reader):
             smiles = row[-1]
             smiles_data.append(smiles)
-            # mol = Chem.MolFromSmiles(smiles)
-            # if mol != None:
-            #     smiles_data.append(smiles)
     return smiles_data
 
-"""
-Remove a connected subgraph from the original molecule graph. 
-Args:
-    1. Original graph (networkx graph)
-    2. Index of the starting atom from which the removal begins (int)
-    3. Percentage of the number of atoms to be removed from original graph
+def detect_functional_groups(mol):
+    func_groups = []
+    for frags in Chem.GetMolFrags(mol, asMols=True):
+        matches = mol.GetSubstructMatches(frags)
+        for match in matches:
+            func_groups.append(set(match))
+    return func_groups
 
-Outputs:
-    1. Resulting graph after subgraph removal (networkx graph)
-    2. Indices of the removed atoms (list)
-"""
-
-def removeSubgraph(Graph, center, percent=0.2):
+def removeSubgraph(Graph, center, percent=0.2, functional_groups=None):
     assert percent <= 1
     G = Graph.copy()
-    num = int(np.floor(len(G.nodes)*percent))
+    num = int(np.floor(len(G.nodes) * percent))
     removed = []
     temp = [center]
-    
     while len(removed) < num:
         neighbors = []
         for n in temp:
@@ -87,8 +76,16 @@ def removeSubgraph(Graph, center, percent=0.2):
             else:
                 break
         temp = list(set(neighbors))
+    
+    if functional_groups:
+        expanded_removed = set(removed)
+        for group in functional_groups:
+            if any(atom in removed for atom in group):
+                expanded_removed.update(group)
+                G.remove_nodes_from(group)  # Remove functional group nodes from G as well
+        removed = list(expanded_removed)
+    
     return G, removed
-
 
 class MoleculeDataset(Dataset):
     def __init__(self, data_path, remove_header=False):
@@ -97,83 +94,39 @@ class MoleculeDataset(Dataset):
 
     def __getitem__(self, index):
         mol = Chem.MolFromSmiles(self.smiles_data[index])
-        # mol = Chem.AddHs(mol)
-
         N = mol.GetNumAtoms()
         M = mol.GetNumBonds()
-
         type_idx = []
         chirality_idx = []
         atomic_number = []
         atoms = mol.GetAtoms()
         bonds = mol.GetBonds()
-
-        if N < 2:  # Skip subgraphing if there is only one atom
-            for atom in atoms:
-                type_idx.append(ATOM_LIST.index(atom.GetAtomicNum()))
-                chirality_idx.append(CHIRALITY_LIST.index(atom.GetChiralTag()))
-                atomic_number.append(atom.GetAtomicNum())
-
-            x1 = torch.tensor(type_idx, dtype=torch.long).view(-1,1)
-            x2 = torch.tensor(chirality_idx, dtype=torch.long).view(-1,1)
-            x = torch.cat([x1, x2], dim=-1)
-            
-            edge_index = torch.tensor([], dtype=torch.long).view(2,0)  # No edges
-            edge_attr = torch.tensor([], dtype=torch.long).view(0,2)   # No edge features
-            
-            data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
-            return data, data  # Return the same graph as both views
-
-        # Sample 2 different centers to start for i and j
         start_i, start_j = random.sample(list(range(N)), 2)
-
-        # Construct the original molecular graph from edges (bonds)
-        edges = []
-        for bond in bonds:
-            edges.append([bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()])
+        edges = [[bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()] for bond in bonds]
         molGraph = nx.Graph(edges)
-        
-        # Get the graph for i and j after removing subgraphs
-        # G_i, removed_i = removeSubgraph(molGraph, start_i)
-        # G_j, removed_j = removeSubgraph(molGraph, start_j)
-
-        # percent_i, percent_j = random.uniform(0, 0.25), random.uniform(0, 0.25)
+        functional_groups = detect_functional_groups(mol)
         percent_i, percent_j = 0.25, 0.25
-        # percent_i, percent_j = 0.2, 0.2
-        G_i, removed_i = removeSubgraph(molGraph, start_i, percent_i)
-        G_j, removed_j = removeSubgraph(molGraph, start_j, percent_j)
-        
+        G_i, removed_i = removeSubgraph(molGraph, start_i, percent_i, functional_groups)
+        G_j, removed_j = removeSubgraph(molGraph, start_j, percent_j, functional_groups)
         for atom in atoms:
             type_idx.append(ATOM_LIST.index(atom.GetAtomicNum()))
             chirality_idx.append(CHIRALITY_LIST.index(atom.GetChiralTag()))
             atomic_number.append(atom.GetAtomicNum())
-
         x1 = torch.tensor(type_idx, dtype=torch.long).view(-1,1)
         x2 = torch.tensor(chirality_idx, dtype=torch.long).view(-1,1)
         x = torch.cat([x1, x2], dim=-1)
-        # x shape (N, 2) [type, chirality]
-
-        # Mask the atoms in the removed list 
-        x_i = deepcopy(x)
+        x_i, x_j = deepcopy(x), deepcopy(x)
         for atom_idx in removed_i:
-            # Change atom type to 118, and chirality to 0
             x_i[atom_idx,:] = torch.tensor([len(ATOM_LIST), 0])
-        x_j = deepcopy(x)
         for atom_idx in removed_j:
-            # Change atom type to 118, and chirality to 0
             x_j[atom_idx,:] = torch.tensor([len(ATOM_LIST), 0])
-
-        # Only consider bond still exist after removing subgraph
         row_i, col_i, row_j, col_j = [], [], [], []
         edge_feat_i, edge_feat_j = [], []
         G_i_edges = list(G_i.edges)
         G_j_edges = list(G_j.edges)
         for bond in mol.GetBonds():
             start, end = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-            feature = [
-                BOND_LIST.index(bond.GetBondType()),
-                BONDDIR_LIST.index(bond.GetBondDir())
-            ]
+            feature = [BOND_LIST.index(bond.GetBondType()), BONDDIR_LIST.index(bond.GetBondDir())]
             if (start, end) in G_i_edges:
                 row_i += [start, end]
                 col_i += [end, start]
@@ -184,21 +137,16 @@ class MoleculeDataset(Dataset):
                 col_j += [end, start]
                 edge_feat_j.append(feature)
                 edge_feat_j.append(feature)
-
         edge_index_i = torch.tensor([row_i, col_i], dtype=torch.long)
         edge_attr_i = torch.tensor(np.array(edge_feat_i), dtype=torch.long)
         edge_index_j = torch.tensor([row_j, col_j], dtype=torch.long)
         edge_attr_j = torch.tensor(np.array(edge_feat_j), dtype=torch.long)
-        
         data_i = Data(x=x_i, edge_index=edge_index_i, edge_attr=edge_attr_i)
         data_j = Data(x=x_j, edge_index=edge_index_j, edge_attr=edge_attr_j)
-        
         return data_i, data_j
-
-
+    
     def __len__(self):
         return len(self.smiles_data)
-
 
 class MoleculeDatasetWrapper(object):
     def __init__(self, batch_size, num_workers, valid_size, data_path, remove_header=False):
@@ -240,7 +188,6 @@ class MoleculeDatasetWrapper(object):
         )
 
         return train_loader, valid_loader
-
 
 if __name__ == "__main__":
     data_path = 'data/chem_dataset/zinc_standard_agent/processed/smiles.csv'

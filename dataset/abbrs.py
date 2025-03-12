@@ -1,6 +1,8 @@
 """ Set of common abbreviations in molecular images"""
 from typing import List
 import re
+from rdkit import Chem
+
 
 ORGANIC_SET = {'B', 'C', 'N', 'O', 'P', 'S', 'F', 'Cl', 'Br','I'}
 RGROUP_SYMBOLS = ['R', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12',
@@ -17,10 +19,10 @@ class Substitution(object):
         self.probability = probability
 
 SUBSTITUTIONS: List[Substitution] = [
-    Substitution(['NO2'], '[N+](=O)[O-]', "[N+](=O)[O-]", 0.5), # 'O2N'
-    Substitution(['CHO'], '[CH1](=O)', "[CH1](=O)", 0.5), #'OHC'
-    Substitution(['CO2Et'], 'C(=O)[OH0;D2][CH2;D2][CH3]', "[C](=O)OCC", 0.5), # 'COOEt','EtO2C'
-    Substitution(['CO2Me'], 'C(=O)[OH0;D2][CH3;D1]', "[C](=O)OC", 0), #'COOMe','MeO2C'
+    Substitution(['NO2', 'O2N'], '[N+](=O)[O-]', "[N+](=O)[O-]", 0.7),
+    Substitution(['CHO', 'OHC'], '[CH1](=O)', "[CH1](=O)", 0.5),
+    Substitution(['CO2Et', 'COOEt','EtO2C'], 'C(=O)[OH0;D2][CH2;D2][CH3]', "[C](=O)OCC", 0.5),
+    Substitution(['CO2Me', 'COOMe','MeO2C'], 'C(=O)[OH0;D2][CH3;D1]', "[C](=O)OC", 0),
 
     Substitution(['OAc'], '[OH0;X2]C(=O)[CH3]', "[O]C(=O)C", 0.7),
     Substitution(['NHAc'], '[NH1;D2]C(=O)[CH3]', "[NH]C(=O)C", 0.7),
@@ -113,7 +115,25 @@ SUBSTITUTIONS: List[Substitution] = [
 
 ]
 
-ABBREVIATIONS = {abbrv: sub for sub in SUBSTITUTIONS for abbrv in sub.abbrvs}
+
+
+ABBREVIATIONS = {}
+for sub in SUBSTITUTIONS:
+    for abbrv in sub.abbrvs:
+        ABBREVIATIONS[abbrv] = sub
+
+ABBREVIATION_PATTERNS = {}
+
+for sub in SUBSTITUTIONS:
+    mol = Chem.MolFromSmarts(sub.smarts)
+    if mol is not None:
+        for abbrv in sub.abbrvs:
+            ABBREVIATION_PATTERNS[abbrv] = mol
+
+
+ABBREVIATIONS_VOCAB = { # start from 121
+    abbrv: i + 120 for i, sub in enumerate(SUBSTITUTIONS) for abbrv in sub.abbrvs
+} # 118 is the number of elements in the periodic table, 119 is placeholder
 
 VALENCES = {
     "H": [1], "Li": [1], "Be": [2], "B": [3], "C": [4], "N": [3, 5], "O": [2], "F": [1],

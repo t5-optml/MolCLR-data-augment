@@ -11,4 +11,5 @@ ckpt/
 apex/
 config.yaml
 temp.py
+config_finetune.yaml
 venv/
