@@ -187,7 +187,7 @@ class MolCLR(object):
 
 def main():
     config = yaml.load(open("config.yaml", "r"), Loader=yaml.FullLoader)
-    print(config)
+    # print(config)
 
     if config["aug"] == "node":
         from dataset.dataset import MoleculeDatasetWrapper
