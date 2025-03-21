@@ -59,7 +59,7 @@ def clean_smiles_data_with_column(input_file, output_file, smiles_column='smiles
         mol = Chem.MolFromSmiles(smiles_str)
         
         if mol is not None:
-            # Additional check: Try to get atoms and bonds
+
             try:
                 num_atoms = mol.GetNumAtoms()
                 num_bonds = mol.GetNumBonds()

@@ -14,8 +14,8 @@ gpu: cpu                             # training GPU
 
 model_type: gin                         # GNN backbone (i.e., gin/gcn)
 model: 
-  num_layer: 3                          # number of graph conv layers
-  emb_dim: 100                          # embedding dimension in graph conv layers
+  num_layer: 5                          # number of graph conv layers
+  emb_dim: 300                          # embedding dimension in graph conv layers
   feat_dim: 128                         # output feature dimention
   drop_ratio: 0                         # dropout ratio
   pool: mean                            # readout pooling (i.e., mean/max/add)
