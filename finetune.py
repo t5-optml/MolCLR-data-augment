@@ -50,7 +50,7 @@ class FineTune(object):
         self.config = config
         self.device = self._get_device()
 
-        current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+        current_time = datetime.now().strftime('%b%d_%H:%M:%S')
         dir_name = current_time + '_' + config['task_name'] + '_' + config['dataset']['target']
         log_dir = os.path.join('finetune', dir_name)
         self.writer = SummaryWriter(log_dir=log_dir)

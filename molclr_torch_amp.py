@@ -25,7 +25,7 @@ class MolCLR(object):
         self.config = config
         self.device = self._get_device()
 
-        dir_name = datetime.now().strftime('%b%d_%H-%M-%S')
+        dir_name = "Laplacian_Perturbation"
         log_dir = os.path.join('ckpt', dir_name)
         self.writer = SummaryWriter(log_dir=log_dir)
 
@@ -215,6 +215,8 @@ def main():
         from dataset.dataset_pollution import MoleculeDatasetWrapper
     elif config["aug"] == "noise":
         from dataset.dataset_noise import MoleculeDatasetWrapper
+    elif config["aug"] == "laplace":
+        from dataset.dataset_laplace import MoleculeDatasetWrapper
     else:
         raise ValueError("Not defined molecule augmentation!")
 
