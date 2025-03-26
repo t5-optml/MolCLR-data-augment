@@ -213,8 +213,8 @@ def main():
         from dataset.node_edge_masking import MoleculeDatasetWrapper
     elif config["aug"] == "pollution":
         from dataset.dataset_pollution import MoleculeDatasetWrapper
-    elif config["aug"] == "noise":
-        from dataset.dataset_noise import MoleculeDatasetWrapper
+    elif config["aug"] == "pollution_v2":
+        from dataset.dataset_pollution_v2 import MoleculeDatasetWrapper
     else:
         raise ValueError("Not defined molecule augmentation!")
 
