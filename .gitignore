@@ -13,3 +13,5 @@ config.yaml
 temp.py
 config_finetune.yaml
 venv/
+test2.py
+*.png

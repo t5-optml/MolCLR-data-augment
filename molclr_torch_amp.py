@@ -200,6 +200,8 @@ def main():
         from dataset.dataset_func_excl import MoleculeDatasetWrapper
     elif config['aug'] == 'func_mix':
         from dataset.dataset_func_mix import MoleculeDatasetWrapper
+    elif config['aug'] == 'func_repl':
+        from dataset.dataset_func_repl import MoleculeDatasetWrapper
     elif config["aug"] == "mix":
         from dataset.dataset_mix import MoleculeDatasetWrapper
     elif config["aug"] == "mix_new":
@@ -214,8 +216,8 @@ def main():
         from dataset.node_edge_masking import MoleculeDatasetWrapper
     elif config["aug"] == "pollution":
         from dataset.dataset_pollution import MoleculeDatasetWrapper
-    elif config["aug"] == "noise":
-        from dataset.dataset_noise import MoleculeDatasetWrapper
+    elif config["aug"] == "pollution_v2":
+        from dataset.dataset_pollution_v2 import MoleculeDatasetWrapper
     elif config["aug"] == "laplace6":
         from dataset.dataset_laplace6_bonddir import MoleculeDatasetWrapper
     elif config["aug"] == "random_edge_pert":
