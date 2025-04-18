@@ -15,3 +15,5 @@ config_finetune.yaml
 venv/
 test2.py
 *.png
+.ipynb_checkpoints/
+dataset/**/.ipynb_checkpoints/
