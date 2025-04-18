@@ -25,7 +25,8 @@ class MolCLR(object):
         self.config = config
         self.device = self._get_device()
 
-        dir_name = "Laplacian_Perturbation"
+        current_time = datetime.now().strftime('%b%d_%H:%M:%S')
+        dir_name = self.config["aug"] + '_'+ current_time
         log_dir = os.path.join('ckpt', dir_name)
         self.writer = SummaryWriter(log_dir=log_dir)
 
@@ -78,7 +79,7 @@ class MolCLR(object):
             raise ValueError("Undefined GNN model.")
         print(model)
 
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             model.parameters(), self.config['init_lr'],
             weight_decay=eval(self.config['weight_decay'])
         )
@@ -215,8 +216,10 @@ def main():
         from dataset.dataset_pollution import MoleculeDatasetWrapper
     elif config["aug"] == "noise":
         from dataset.dataset_noise import MoleculeDatasetWrapper
-    elif config["aug"] == "laplace":
-        from dataset.dataset_laplace import MoleculeDatasetWrapper
+    elif config["aug"] == "laplace6":
+        from dataset.dataset_laplace6_bonddir import MoleculeDatasetWrapper
+    elif config["aug"] == "random_edge_pert":
+        from dataset.dataset_random_edge_pert import MoleculeDatasetWrapper
     else:
         raise ValueError("Not defined molecule augmentation!")
 
