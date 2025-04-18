@@ -3,7 +3,7 @@
 __pycache__
 
 *.zip
-biostructures_cleaned.csv/
+biostructures_cleaned.csv
 data/
 finetune/
 experiments/
