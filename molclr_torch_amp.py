@@ -218,8 +218,8 @@ def main():
         from dataset.dataset_pollution import MoleculeDatasetWrapper
     elif config["aug"] == "pollution_v2":
         from dataset.dataset_pollution_v2 import MoleculeDatasetWrapper
-    elif config["aug"] == "laplace6":
-        from dataset.dataset_laplace6_bonddir import MoleculeDatasetWrapper
+    elif config["aug"] == "laplace":
+        from dataset.dataset_laplace_edge_perturbation import MoleculeDatasetWrapper
     elif config["aug"] == "random_edge_pert":
         from dataset.dataset_random_edge_pert import MoleculeDatasetWrapper
     else:
